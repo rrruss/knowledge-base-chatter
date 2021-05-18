@@ -6,9 +6,11 @@ __pycache__/
 # Scrapy stuff:
 .scrapy
 
-# PyBuilder
-.pybuilder/
-target/
+# Terraform
+**/.terraform/*
+*.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
 
 # Jupyter Notebook
 .ipynb_checkpoints
