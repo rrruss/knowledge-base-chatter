@@ -1,0 +1,4 @@
+beautifulsoup4==4.9.3
+pandas==1.2.3
+Scrapy==2.4.1
+boto3==1.17.20
