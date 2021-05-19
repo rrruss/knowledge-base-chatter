@@ -292,7 +292,7 @@ class SlackQAChatbot(object):
 
         """
         log.debug(f'Entering: "{inspect.currentframe().f_code.co_name}"')
-        # USed to get similarity between user question and covid-19 database questions
+        # USed to get similarity between user question and slack database questions
         sentence_1 = self.nlp_for_sent_similarity(sentence_1)
         sentence_2 = self.nlp_for_sent_similarity(sentence_2)
         return sentence_1.similarity(sentence_2)
@@ -428,7 +428,7 @@ class SlackQAChatbot(object):
         pass
 
     def print_chatbot_ready_text(self, text):
-        """Prints fancy 'COVID-19 CHATBOT' when program starts"""
+        """Prints fancy 'Slack CHATBOT' when program starts"""
         log.debug(f'Entering: "{inspect.currentframe().f_code.co_name}"')
         init(strip=not sys.stdout.isatty())
         cprint(
@@ -461,7 +461,7 @@ class SlackQAChatbot(object):
 
 ###########################################################################################
 
-# Creating COVID Chatbot GUI with tkinter
+# Creating Slack Chatbot GUI with tkinter
 import random
 from tkinter import *
 
