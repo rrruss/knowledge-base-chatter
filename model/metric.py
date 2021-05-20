@@ -2,9 +2,9 @@ import torch
 from transformers import RobertaForMaskedLM, RobertaTokenizer
 
 
-# TODO: move these global variables to local as we add metrics.
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+# TODO: move these global variables to local as we add metrics.
 MODEL = RobertaForMaskedLM.from_pretrained('roberta-large').to(DEVICE)
 TOKENIZER = RobertaTokenizer.from_pretrained('roberta-large')
 
@@ -20,7 +20,7 @@ def mlm_metric(prompt, response):
     prompt   - (str) The user comment.
     response - (str) The bot's response.
 
-    Returns negative log probability (lower is better).
+    Returns sum of negative probabilities (lower is better).
     -------
 
     """
