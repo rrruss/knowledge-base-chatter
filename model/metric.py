@@ -37,7 +37,6 @@ def mlm_metric(prompt, response):
             preds = torch.softmax(output.logits, dim=-1)[0][response_start_index + i]
             prob = preds[response_id].item()
         probs.append(prob)
-    print(probs)
     return -torch.sum(torch.tensor(probs))
 
 
