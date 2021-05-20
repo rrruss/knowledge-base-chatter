@@ -5,6 +5,7 @@ from transformers import RobertaForMaskedLM, RobertaTokenizer
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # TODO: move these global variables to local as we add metrics.
+# TODO: finetune `MODEL` on the QA/dialog dataset for a better metric
 MODEL = RobertaForMaskedLM.from_pretrained('roberta-large').to(DEVICE)
 TOKENIZER = RobertaTokenizer.from_pretrained('roberta-large')
 
