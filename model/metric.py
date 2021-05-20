@@ -30,6 +30,7 @@ def mlm_metric(prompt, response):
     dividing_indices = [i for i in range(1, input_ids.shape[0]) if input_ids[i - 1:i + 1].tolist() == [2, 2]]
     response_start_index = dividing_indices[0] + 1
     probs = []
+    MODEL.eval()
     for i, response_id in enumerate(input_ids[response_start_index:-1]):
         response_id = response_id.item()
         tokens['input_ids'][0][response_start_index + i] = TOKENIZER.mask_token_id
