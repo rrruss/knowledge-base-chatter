@@ -74,27 +74,27 @@ class BaselineQAModel(nn.Module):
 
 class BaselineContextModel(nn.Module):
     """
-        The baseline model for the context (sequence classification) task.
+    The baseline model for the context (sequence classification) task.
 
-        Parameters
-        ----------
-        device : torch.device
-            The device to run the model and inferences on.
-        model_class : Hugging Face model with a span classification head on top
-            A model such as BertForQuestionAnswering.
-        max_length : The maximum number of tokens to use in one pass. (All tokens
-            will be covered, since overflow tokens are also passed through the
-            model.)
-        model_tokenizer : Hugging Face tokenizer
-            Tested with non-Rust based tokenizers at present.
-        num_contexts : int
-            Number of possible context classes to choose from.
-        pretrained_model_path : str
-            Path to a pretrained model (either in the cloud or on one's machine).
-        stride : int
-            The amount of overlap between overflow tokens and the tokens already
-            passed into the model.
-        """
+    Parameters
+    ----------
+    device : torch.device
+        The device to run the model and inferences on.
+    model_class : Hugging Face model with a span classification head on top
+        A model such as BertForQuestionAnswering.
+    max_length : The maximum number of tokens to use in one pass. (All tokens
+        will be covered, since overflow tokens are also passed through the
+        model.)
+    model_tokenizer : Hugging Face tokenizer
+        Tested with non-Rust based tokenizers at present.
+    num_contexts : int
+        Number of possible context classes to choose from.
+    pretrained_model_path : str
+        Path to a pretrained model (either in the cloud or on one's machine).
+    stride : int
+        The amount of overlap between overflow tokens and the tokens already
+        passed into the model.
+    """
 
     def __init__(self,
                  device=torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
