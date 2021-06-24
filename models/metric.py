@@ -18,12 +18,14 @@ def mlm_metric(prompt, response):
 
     Parameters
     ----------
-    prompt   - (str) The user comment.
-    response - (str) The bot's response.
+    prompt : str
+        The user comment.
+    response : str
+        The bot's response.
 
-    Returns sum of negative probabilities (lower is better).
+    Returns
     -------
-
+    Sum of negative probabilities (lower is better).
     """
     tokens = TOKENIZER([[prompt, response]], return_tensors='pt')
     input_ids = tokens['input_ids'][0]
