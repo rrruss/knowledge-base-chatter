@@ -125,6 +125,7 @@ df_iphone_rel['Query_type'] = 'Relevant'
 
 frames = [df_irrelevant, df_relevant,df_appleWatch_rel,df_mac_rel,df_iphone_rel]
 df_combined = pd.concat(frames,ignore_index=True)
+
 print("================Data is ready for pre-processing================")
 
 #Pre-processing
@@ -156,6 +157,7 @@ classifier = LogisticRegression(max_iter = 500)
 tfidf_vector = TfidfVectorizer()
 pipe = Pipeline([('vectorizer', tfidf_vector),
                  ('classifier', classifier)])
+
 pipe.fit(X_train,y_train)
 
 # Model Training Accuracy
@@ -182,6 +184,7 @@ def extract_relevant_conversation(chat,pipe):
    return result
 
 #chat = "Hi. How are you ?. How is the weather today. Is slack Hung ? How to send email from slack. What are the features of Apple iphone X ? I am a fool."
+chat = "Hi. How are you ?. How is the weather today. Is slack Hung ? How to send email from slack. What are the features of Apple iphone X ? I am a fool."
 answer = extract_relevant_conversation(chat,pipe)
 
 print(answer)
