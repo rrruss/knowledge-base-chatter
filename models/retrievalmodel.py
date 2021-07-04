@@ -1,10 +1,11 @@
 import torch
 import torch.nn as nn
+
 from transformers import (DPRContextEncoder, DPRContextEncoderTokenizer,
                           DPRQuestionEncoder, DPRQuestionEncoderTokenizer,
                           DPRReader, DPRReaderTokenizer)
 from transformers import RobertaForQuestionAnswering, RobertaTokenizerFast, RobertaForSequenceClassification
-
+from transformers import RobertaTokenizer
 
 class Model(nn.Module):
     """
@@ -61,6 +62,7 @@ class Model(nn.Module):
         )
         r_output = self.r_model(**encoded_inputs)
         return r_output.start_logits, r_output.end_logits, encoded_inputs['input_ids'], r_output.relevance_logits
+
 
 
 class BaselineQAModel(nn.Module):
