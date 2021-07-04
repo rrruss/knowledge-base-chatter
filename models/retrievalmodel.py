@@ -1,6 +1,68 @@
 import torch
 import torch.nn as nn
-from transformers import RobertaForQuestionAnswering, RobertaTokenizer, RobertaForSequenceClassification
+
+from transformers import (DPRContextEncoder, DPRContextEncoderTokenizer,
+                          DPRQuestionEncoder, DPRQuestionEncoderTokenizer,
+                          DPRReader, DPRReaderTokenizer)
+from transformers import RobertaForQuestionAnswering, RobertaTokenizerFast, RobertaForSequenceClassification
+from transformers import RobertaTokenizer
+
+class Model(nn.Module):
+    """
+    A full dense passage retrieval model.
+
+    Parameters
+    ----------
+    contexts : sequence of strings
+        The (exhaustive) contexts that comprise the full documentation.
+    fill_context_embeddings : boolean
+        Whether to fill the `context_embeddings` (which could take a
+        long time) or not. This should be set to False in the `model_fn`
+        in the predict.py script for SageMaker, since SageMaker will
+        otherwise time out.
+    """
+
+    def __init__(self, contexts=None, fill_context_embeddings=True):
+        super(Model, self).__init__()
+        self.c_model = DPRContextEncoder.from_pretrained('facebook/dpr-ctx_encoder-single-nq-base')
+        self.c_tokenizer = DPRContextEncoderTokenizer.from_pretrained('facebook/dpr-ctx_encoder-single-nq-base')
+        self.q_model = DPRQuestionEncoder.from_pretrained('facebook/dpr-question_encoder-single-nq-base')
+        self.q_tokenizer = DPRQuestionEncoderTokenizer.from_pretrained('facebook/dpr-question_encoder-single-nq-base')
+        self.r_model = DPRReader.from_pretrained('facebook/dpr-reader-single-nq-base')
+        self.r_tokenizer = DPRReaderTokenizer.from_pretrained('facebook/dpr-reader-single-nq-base')
+        self.contexts = contexts
+        # Not enough time to load context embeddings in AWS SageMaker,
+        # but can fill weights from saved state dict after loading model.
+        if not fill_context_embeddings:
+            output_features = self.c_model.ctx_encoder.bert_model.pooler.dense.out_features
+            self.context_embeddings = nn.Parameter(torch.zeros(len(self.contexts), output_features))
+        else:
+            context_embeddings = []
+            with torch.no_grad():
+               for context in self.contexts:
+                   input_ids = self.c_tokenizer(context, return_tensors='pt')["input_ids"]
+                   output = self.c_model(input_ids)
+                   context_embeddings.append(output.pooler_output)
+            self.context_embeddings = nn.Parameter(torch.cat(context_embeddings, dim=0))
+
+    def forward(self, question):
+        q_input_ids = self.q_tokenizer(question, return_tensors='pt')['input_ids']
+        q_output = self.q_model(q_input_ids)
+        q_embedding = q_output.pooler_output
+        similarities = torch.cosine_similarity(q_embedding, self.context_embeddings)
+        topk_similarities = torch.topk(similarities, k=10, dim=-1)
+        contexts = [self.contexts[i] for i in topk_similarities.indices]
+        encoded_inputs = self.r_tokenizer(
+            questions=[question for _ in contexts],
+            # titles=[],  # add if contexts have titles
+            texts=contexts,
+            return_tensors='pt',
+            padding=True,
+            truncation=True
+        )
+        r_output = self.r_model(**encoded_inputs)
+        return r_output.start_logits, r_output.end_logits, encoded_inputs['input_ids'], r_output.relevance_logits
+
 
 
 class BaselineQAModel(nn.Module):
@@ -29,7 +91,7 @@ class BaselineQAModel(nn.Module):
                  device=torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
                  model_class=RobertaForQuestionAnswering,
                  max_length=None,
-                 model_tokenizer=RobertaTokenizer,
+                 model_tokenizer=RobertaTokenizerFast,
                  pretrained_model_path='roberta-large',
                  stride=12):
         super(BaselineQAModel, self).__init__()
@@ -100,7 +162,7 @@ class BaselineContextModel(nn.Module):
                  device=torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
                  model_class=RobertaForSequenceClassification,
                  max_length=None,
-                 model_tokenizer=RobertaTokenizer,
+                 model_tokenizer=RobertaTokenizerFast,
                  num_contexts=1024,
                  pretrained_model_path='roberta-large',
                  stride=12):
