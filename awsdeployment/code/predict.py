@@ -5,9 +5,7 @@ import json
 import logging
 import torch
 import torch.nn as nn
-from transformers import (DPRContextEncoder, DPRContextEncoderTokenizer,
-                          DPRQuestionEncoder, DPRQuestionEncoderTokenizer,
-                          DPRReader, DPRReaderTokenizer)
+
 
 # set the constants for the content types
 JSON_CONTENT_TYPE = 'application/json'

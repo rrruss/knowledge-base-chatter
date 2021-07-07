@@ -1,13 +1,12 @@
 import torch
 import torch.nn as nn
-
 from transformers import (DPRContextEncoder, DPRContextEncoderTokenizer,
                           DPRQuestionEncoder, DPRQuestionEncoderTokenizer,
-                          DPRReader, DPRReaderTokenizer)
+                          DPRReader, DPRReaderTokenizerFast)
 from transformers import RobertaForQuestionAnswering, RobertaTokenizerFast, RobertaForSequenceClassification
-from transformers import RobertaTokenizer
 
-class Model(nn.Module):
+
+class LongQAModel(nn.Module):
     """
     A full dense passage retrieval model.
 
@@ -23,13 +22,13 @@ class Model(nn.Module):
     """
 
     def __init__(self, contexts=None, fill_context_embeddings=True):
-        super(Model, self).__init__()
+        super(LongQAModel, self).__init__()
         self.c_model = DPRContextEncoder.from_pretrained('facebook/dpr-ctx_encoder-single-nq-base')
         self.c_tokenizer = DPRContextEncoderTokenizer.from_pretrained('facebook/dpr-ctx_encoder-single-nq-base')
         self.q_model = DPRQuestionEncoder.from_pretrained('facebook/dpr-question_encoder-single-nq-base')
         self.q_tokenizer = DPRQuestionEncoderTokenizer.from_pretrained('facebook/dpr-question_encoder-single-nq-base')
         self.r_model = DPRReader.from_pretrained('facebook/dpr-reader-single-nq-base')
-        self.r_tokenizer = DPRReaderTokenizer.from_pretrained('facebook/dpr-reader-single-nq-base')
+        self.r_tokenizer = DPRReaderTokenizerFast.from_pretrained('facebook/dpr-reader-single-nq-base')
         self.contexts = contexts
         # Not enough time to load context embeddings in AWS SageMaker,
         # but can fill weights from saved state dict after loading model.
@@ -45,13 +44,16 @@ class Model(nn.Module):
                    context_embeddings.append(output.pooler_output)
             self.context_embeddings = nn.Parameter(torch.cat(context_embeddings, dim=0))
 
-    def forward(self, question):
+    def forward(self, question, retrieval_only=False):
         q_input_ids = self.q_tokenizer(question, return_tensors='pt')['input_ids']
         q_output = self.q_model(q_input_ids)
         q_embedding = q_output.pooler_output
-        similarities = torch.cosine_similarity(q_embedding, self.context_embeddings)
-        topk_similarities = torch.topk(similarities, k=10, dim=-1)
+        similarities = torch.matmul(q_embedding, self.context_embeddings.T)
+        topk_similarities = torch.topk(similarities[0], k=10, dim=-1)
         contexts = [self.contexts[i] for i in topk_similarities.indices]
+        if retrieval_only:
+            return contexts
+
         encoded_inputs = self.r_tokenizer(
             questions=[question for _ in contexts],
             # titles=[],  # add if contexts have titles
@@ -62,7 +64,6 @@ class Model(nn.Module):
         )
         r_output = self.r_model(**encoded_inputs)
         return r_output.start_logits, r_output.end_logits, encoded_inputs['input_ids'], r_output.relevance_logits
-
 
 
 class BaselineQAModel(nn.Module):
