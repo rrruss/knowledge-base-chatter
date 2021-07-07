@@ -53,6 +53,7 @@ class LongQAModel(nn.Module):
         contexts = [self.contexts[i] for i in topk_similarities.indices]
         if retrieval_only:
             return contexts
+
         encoded_inputs = self.r_tokenizer(
             questions=[question for _ in contexts],
             # titles=[],  # add if contexts have titles
