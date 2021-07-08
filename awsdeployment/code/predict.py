@@ -21,6 +21,7 @@ def model_fn(model_dir):
 
     try:
         model = LongQAModel()
+
         logging.info("Model initialized.")
         model.load_state_dict(torch.load(os.path.join(model_dir, 'model.pth')))
         logging.info("State dict loaded.")
