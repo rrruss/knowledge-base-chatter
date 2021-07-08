@@ -6,6 +6,8 @@ import logging
 import torch
 import torch.nn as nn
 
+from retrievalmodel import LongQAModel
+
 
 # set the constants for the content types
 JSON_CONTENT_TYPE = 'application/json'
@@ -18,7 +20,8 @@ def model_fn(model_dir):
     logging.info("model_dir contents = \n" + '\n'.join(os.listdir(model_dir)))
 
     try:
-        model = Model()
+        model = LongQAModel()
+
         logging.info("Model initialized.")
         model.load_state_dict(torch.load(os.path.join(model_dir, 'model.pth')))
         logging.info("State dict loaded.")
@@ -33,7 +36,6 @@ def model_fn(model_dir):
 
 
 def input_fn(serialized_input_data, content_type=JSON_CONTENT_TYPE):
-    logging.info('Deserializing the input data.')
     if content_type == JSON_CONTENT_TYPE:
         input_data = json.loads(serialized_input_data)
         return input_data
@@ -49,8 +51,6 @@ def output_fn(prediction, accept=JSON_CONTENT_TYPE):
 
 
 def predict_fn(input_dict, model):
-    print('Inferring class of input data.')
-
     start_logits, end_logits, input_ids, relevance_logits = model(input_dict['question'])
     topk_relevant = torch.topk(relevance_logits, k=relevance_logits.shape[0] // 2, dim=-1)
     starts = torch.argmax(start_logits, dim=-1)
@@ -62,4 +62,5 @@ def predict_fn(input_dict, model):
         end = ends[index]
         best_answers.append(model.r_tokenizer.decode(question_context[start:end + 1]))
 
+    best_answers = [(b[0].upper() + b[1:]) if len(b) > 1 else b.upper() for b in best_answers]
     return best_answers

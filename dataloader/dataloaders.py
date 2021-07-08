@@ -54,9 +54,10 @@ class ReaderDataset(Dataset):
         return len(self.qa_dicts)
 
 
-def dataloader(qa_dicts, fast_tokenizer, batch_size=1, split='train', **kwargs):
-    return DataLoader(ReaderDataset(qa_dicts, fast_tokenizer=fast_tokenizer, split=split), batch_size=batch_size,
-                      **kwargs)
+def dataloader(qa_dicts, fast_tokenizer, batch_size=1, split='train', train_size=0.7, **kwargs):
+    return DataLoader(ReaderDataset(
+        qa_dicts, fast_tokenizer=fast_tokenizer, split=split, train_size=train_size, ), batch_size=batch_size,
+        **kwargs)
 
 
 def base_dataloader(*paths, split=None, **kwargs):

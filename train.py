@@ -9,8 +9,8 @@ from trainer.trainers import Trainer
 
 if __name__ == '__main__':
 
-    import ssl
-    ssl._create_default_https_context = ssl._create_unverified_context
+    # import ssl
+    # ssl._create_default_https_context = ssl._create_unverified_context
 
     # get Slack data
     # df = pd.read_json('https://www.dropbox.com/s/r7iwb6qpk73jhrk/qas.json?dl=1')
@@ -30,15 +30,20 @@ if __name__ == '__main__':
                     c for c in d[key] if c in string.ascii_letters + string.digits + string.punctuation + ' ')
                 d[key] = re.sub(r' {2,}', ' ', d[key])
 
-    # get data (`qa_dicts`)
-    test_qa_dicts = qa_dicts[:10]
-
     # instantiate model
-    model = LongQAModel(contexts=[d['context'][:2000] for d in test_qa_dicts[:10]])
+    model = LongQAModel(contexts=[d['context'][:2000] for d in qa_dicts],)
 
     # get data loader
-    train_dataloader = dataloader(test_qa_dicts[:10], fast_tokenizer=model.r_tokenizer, split='train', batch_size=2)
-    valid_dataloader = dataloader(test_qa_dicts[:10], fast_tokenizer=model.r_tokenizer, split='valid', batch_size=2)
+    train_dataloader = dataloader(qa_dicts,
+                                  fast_tokenizer=model.r_tokenizer,
+                                  split='train',
+                                  batch_size=32,
+                                  train_size=0.98)
+    valid_dataloader = dataloader(qa_dicts,
+                                  fast_tokenizer=model.r_tokenizer,
+                                  split='valid',
+                                  batch_size=32,
+                                  train_size=0.98)
 
     # train model
     trainer = Trainer(model,
@@ -47,5 +52,6 @@ if __name__ == '__main__':
                       dataloader=train_dataloader,
                       validation_dataloader=valid_dataloader,
                       lr=1e-5,
-                      batch_size=2)
+                      batch_size=2,
+                      epochs=251)
     trainer.train()

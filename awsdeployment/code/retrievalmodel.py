@@ -36,21 +36,21 @@ class LongQAModel(nn.Module):
         self.r_model = DPRReader.from_pretrained('facebook/dpr-reader-single-nq-base').to(device)
         self.r_tokenizer = DPRReaderTokenizerFast.from_pretrained('facebook/dpr-reader-single-nq-base')
         self.contexts = contexts
-        with open('contexts.json', 'w') as f:
-            json.dump(self.contexts, f)
         # Not enough time to load context embeddings in AWS SageMaker,
         # but can fill weights from saved state dict after loading model.
-        if not fill_context_embeddings:
-            output_features = self.c_model.ctx_encoder.bert_model.pooler.dense.out_features
-            self.context_embeddings = nn.Parameter(torch.zeros(len(self.contexts), output_features)).to(device)
-        else:
-            context_embeddings = []
-            with torch.no_grad():
-               for context in self.contexts:
-                   input_ids = self.c_tokenizer(context, return_tensors='pt').to(device)["input_ids"]
-                   output = self.c_model(input_ids)
-                   context_embeddings.append(output.pooler_output)
-            self.context_embeddings = nn.Parameter(torch.cat(context_embeddings, dim=0)).to(device)
+        if not self.contexts:
+            with open('code/contexts.json') as f:
+                self.contexts = json.load(f)
+#             output_features = self.c_model.ctx_encoder.bert_model.pooler.dense.out_features
+#             self.context_embeddings = nn.Parameter(torch.zeros(len(self.contexts), output_features)).to(device)
+#         else:
+        context_embeddings = []
+        with torch.no_grad():
+           for context in self.contexts:
+               input_ids = self.c_tokenizer(context, return_tensors='pt').to(device)["input_ids"]
+               output = self.c_model(input_ids)
+               context_embeddings.append(output.pooler_output)
+        self.context_embeddings = nn.Parameter(torch.cat(context_embeddings, dim=0)).to(device)
 
     def forward(self, question, retrieval_only=False):
         q_input_ids = self.q_tokenizer(question, return_tensors='pt').to(self.device)['input_ids']

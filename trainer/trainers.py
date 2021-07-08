@@ -101,7 +101,7 @@ class Trainer:
                 logits = outputs.get('logits',
                                      outputs.get('last_hidden_state',
                                                  torch.stack([outputs.start_logits, outputs.end_logits], dim=-1)))
-                loss = self.criterion(logits, targets)
+                loss = self.criterion(logits, targets.to(self.device))
                 y_pred.extend(torch.argmax(logits, dim=-2).flatten().cpu().detach().tolist())
                 y_true.extend(torch.tensor(targets).flatten().tolist())
             running_loss += loss.item()
@@ -152,9 +152,10 @@ class Trainer:
             self._train_epoch()
             validation_results = self._run_validation()
             filename_args = [f'valid_{k}={v:.4f}' for k, v in sorted(validation_results.items())]
-            torch.save(self.model,
+            torch.save(self.model.to('cpu').state_dict(),
                        os.path.join(
                            'modeldata',
                            f'model_{self._current_epoch}_' + '_'.join(filename_args) + '.pt'
                        ))
+            self.model = self.model.to(self.device)
             self._current_epoch += 1

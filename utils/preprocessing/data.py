@@ -33,7 +33,6 @@ def convert_str_indices_to_token_indices(fast_tokenizer,
                                                          question_context,
                                                          [62, 64],
                                                          test=True)
-
     answer using token indices = 15
     (16, 18)
 
