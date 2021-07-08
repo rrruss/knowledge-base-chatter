@@ -3,7 +3,7 @@
 This github has all the pieces for creating a QA bot from support websites of a company. It is using slack and apple as an example. 
 
 ## Pipeline
-  ![Pipeline](./Pipeline.png)
+  ![Pipeline](./Pipleline.png)
   
 ## Different Pieces
 
