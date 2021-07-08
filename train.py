@@ -31,19 +31,19 @@ if __name__ == '__main__':
                 d[key] = re.sub(r' {2,}', ' ', d[key])
 
     # instantiate model
-    model = LongQAModel(contexts=[d['context'][:2000] for d in qa_dicts],)
+    model = LongQAModel(contexts=list(set(d['context'][:2000] for d in qa_dicts)))
 
     # get data loader
     train_dataloader = dataloader(qa_dicts,
                                   fast_tokenizer=model.r_tokenizer,
                                   split='train',
                                   batch_size=32,
-                                  train_size=0.98)
+                                  train_size=0.7)
     valid_dataloader = dataloader(qa_dicts,
                                   fast_tokenizer=model.r_tokenizer,
                                   split='valid',
                                   batch_size=32,
-                                  train_size=0.98)
+                                  train_size=0.7)
 
     # train model
     trainer = Trainer(model,

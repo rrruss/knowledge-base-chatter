@@ -1,5 +1,8 @@
 import json
+import os
+import re
 
+import joblib
 import torch
 import torch.nn as nn
 from transformers import (DPRContextEncoder, DPRContextEncoderTokenizer,
@@ -51,8 +54,17 @@ class LongQAModel(nn.Module):
                output = self.c_model(input_ids)
                context_embeddings.append(output.pooler_output)
         self.context_embeddings = nn.Parameter(torch.cat(context_embeddings, dim=0)).to(device)
+        print('cwd!:', os.getcwd())
+        print(os.listdir('code'))
+        self.noise_remover = joblib.load('code/filter_model.sav')
 
     def forward(self, question, retrieval_only=False):
+        question_sentences = re.findall(r'[^.!?\n]+[.!?]', question)
+        filtered_sentences = []
+        for sentence in question_sentences:
+            if (self.noise_remover.predict([sentence])) == 'Relevant':
+                filtered_sentences.append(sentence)
+        question = ' '.join(filtered_sentences) or question  # if filtered sents removes everything, use question
         q_input_ids = self.q_tokenizer(question, return_tensors='pt').to(self.device)['input_ids']
         q_output = self.q_model(q_input_ids)
         q_embedding = q_output.pooler_output
