@@ -1,0 +1,4 @@
+boto3==1.17.20
+datasets==1.6.2
+transformers==3.0.0
+torch==1.8.1
