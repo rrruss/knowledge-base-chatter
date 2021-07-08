@@ -7,34 +7,19 @@ Original file is located at
     https://colab.research.google.com/drive/1r_wX0ozp3l2slPIVgdRNdeZgDZe-PFnx
 """
 
-import yaml
-import json
-import pandas as pd
 import glob
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-import gc
+import json
 import re
-
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import StratifiedKFold
-from sklearn.feature_extraction.text import CountVectorizer,TfidfVectorizer
-from sklearn.decomposition import TruncatedSVD
-from sklearn.metrics import log_loss,confusion_matrix,classification_report,roc_curve,auc
-from sklearn import metrics
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
-from sklearn.pipeline import Pipeline
-
-import string
-import nltk
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
-from scipy import sparse
-import spacy
 from zipfile import ZipFile
+
+import pandas as pd
+import spacy
+import yaml
+from sklearn import metrics
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
 
 
 def create_json():
