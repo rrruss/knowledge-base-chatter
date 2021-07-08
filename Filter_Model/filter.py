@@ -9,63 +9,86 @@ Original file is located at
 
 import yaml
 import json
-with open("greetings.yml", 'r') as yaml_in, open("greetings.json", "w") as json_out:
-    yaml_object = yaml.safe_load(yaml_in) # yaml_object will be a list or a dict
-    json.dump(yaml_object, json_out)
-
-import json
-
-# Opening JSON file
-f = open('greetings.json',)
-
-# returns JSON object as
-# a dictionary
-data = json.load(f)
-questions = []
-answers = []
-# Iterating through the json
-# list
-for i in data['conversations']:
-    questions.append(i[0])
-    answers.append(i[1])
-
-# Closing file
-f.close()
-
 import pandas as pd
-
-df = pd.DataFrame(list(zip(questions, answers)),
-               columns =['Question', 'Answer'])
-
-!unzip convo.zip
-
 import glob
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import gc
+import re
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import StratifiedKFold
+from sklearn.feature_extraction.text import CountVectorizer,TfidfVectorizer
+from sklearn.decomposition import TruncatedSVD
+from sklearn.metrics import log_loss,confusion_matrix,classification_report,roc_curve,auc
+from sklearn import metrics
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
+
+import string
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from scipy import sparse
+import spacy
+from zipfile import ZipFile
+
+
+def create_json():
+    with open("greetings.yml", 'r') as yaml_in, open("greetings.json", "w") as json_out:
+         yaml_object = yaml.safe_load(yaml_in) # yaml_object will be a list or a dict
+         json.dump(yaml_object, json_out)
+    print("==============greetings.json created================")
+
+create_json()
+
+def create_greeting_df():
+    f = open('greetings.json',)
+    data = json.load(f)
+    questions = []
+    answers = []
+    for i in data['conversations']:
+       questions.append(i[0])
+       answers.append(i[1])
+    f.close()
+    df_greeting = pd.DataFrame(list(zip(questions, answers)),
+               columns =['Question', 'Answer'])
+    print("===================greeting df created================")
+    return df_greeting
+
+#Small Talk Folder
+with ZipFile('convo.zip', 'r') as zipObj:
+   zipObj.extractall()
+
 list_of_files = glob.glob("./convo8/*.txt")
 
-questions = []
-answers = []
-lines = []
-for files in list_of_files:
-   with open(files) as f:
-      lines = f.readlines()
-
-   count = 0
-   for line in lines[7:-2]:
-      count += 1
-      if count%2 == 0: answers.append(line)
-      else: questions.append(line)
-
-
-df_conv = pd.DataFrame(list(zip(questions, answers)),
+def create_small_talk_df(list_of_files):
+    questions = []
+    answers = []
+    lines = []
+    for files in list_of_files:
+        with open(files) as f:
+             lines = f.readlines()
+        count = 0
+        for line in lines[7:-2]:
+            count += 1
+            if count%2 == 0: answers.append(line)
+            else: questions.append(line)
+    df_smalltalk = pd.DataFrame(list(zip(questions, answers)),
                columns =['Question', 'Answer'])
+    print("=====================Small talk df created==================")
+    return df_smalltalk
 
-frames = [df, df_conv]
+df_greeting = create_greeting_df()
+df_smalltalk = create_small_talk_df(list_of_files)
+frames = [df_greeting, df_smalltalk]
 df_irrelevant = pd.concat(frames,ignore_index=True)
-
-
 df_irrelevant['Query_type'] = 'irrelevant'
 
-
+#Creating Relevant Query DF
 df_relevant = pd.read_csv("slack_tips_qa_nodup.csv")
 
 df_relevant.drop('Context',axis = 1,inplace=True)
@@ -102,27 +125,9 @@ df_iphone_rel['Query_type'] = 'Relevant'
 
 frames = [df_irrelevant, df_relevant,df_appleWatch_rel,df_mac_rel,df_iphone_rel]
 df_combined = pd.concat(frames,ignore_index=True)
+print("================Data is ready for pre-processing================")
 
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-import gc
-
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import StratifiedKFold
-from sklearn.feature_extraction.text import CountVectorizer,TfidfVectorizer
-from sklearn.decomposition import TruncatedSVD
-from sklearn.metrics import log_loss,confusion_matrix,classification_report,roc_curve,auc
-
-import string
-import nltk
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
-from scipy import sparse
-
-
-import spacy
+#Pre-processing
 nlp = spacy.load('en_core_web_sm', disable=["tagger", "parser", "ner"])
 
 def keep_token(t):
@@ -136,8 +141,9 @@ def lemmatize_doc(doc):
     return [ t.lemma_ for t in doc if keep_token(t)]
 
 df_combined['clean_text'] = df_combined.Question.apply(lambda x: ' '.join(lemmatize_doc(nlp(str(x)))))
+print("===================Data is ready for training==================")
 
-from sklearn.model_selection import train_test_split
+#Split the Data in train/test
 df_train, df_test = train_test_split(df_combined, test_size=0.33,shuffle=True, random_state=42)
 
 X_train = df_train['clean_text'].values
@@ -145,34 +151,26 @@ y_train = df_train['Query_type'].values
 X_test = df_test['clean_text'].values
 y_test = df_test['Query_type'].values
 
-
-from sklearn.linear_model import LogisticRegression
-from sklearn.pipeline import Pipeline
+#Training
 classifier = LogisticRegression(max_iter = 500)
 tfidf_vector = TfidfVectorizer()
 pipe = Pipeline([('vectorizer', tfidf_vector),
                  ('classifier', classifier)])
-
 pipe.fit(X_train,y_train)
 
-from sklearn import metrics
+# Model Training Accuracy
 predicted_lr_train = pipe.predict(X_train)
-
-# Model Accuracy
 print("Logistic Regression Training Accuracy:",metrics.accuracy_score(y_train, predicted_lr_train))
 
-from sklearn import metrics
+# Model Test Accuracy
 predicted_lr_test = pipe.predict(X_test)
-
-# Model Accuracy
 print("Logistic Regression Accuracy:",metrics.accuracy_score(y_test, predicted_lr_test))
 print("Logistic Regression Precision:",metrics.precision_score(y_test, predicted_lr_test,average='weighted'))
 print("Logistic Regression Recall:",metrics.recall_score(y_test, predicted_lr_test,average='weighted'))
 
-chat = "Hi. How are you ?. How is the weather today. Is slack Hung ? How to send email from slack. What are the features of Apple iphone X ? I am a fool."
 
-import re
-
+#chat = "Hi. How are you ?. How is the weather today. Is slack Hung ? How to send email from slack. What are the features of Apple iphone X ? I am a fool."
+chat = input('Enter the Query: ')
 def extract_relevant_conversation(chat,pipe):
    result = []
    chat_sentences = re.findall(r'[^.!?\n]+[.!?]', chat)
@@ -183,7 +181,7 @@ def extract_relevant_conversation(chat,pipe):
             result.append(sentence)
    return result
 
-chat = "Hi. How are you ?. How is the weather today. Is slack Hung ? How to send email from slack. What are the features of Apple iphone X ? I am a fool."
+#chat = "Hi. How are you ?. How is the weather today. Is slack Hung ? How to send email from slack. What are the features of Apple iphone X ? I am a fool."
 answer = extract_relevant_conversation(chat,pipe)
 
 print(answer)
