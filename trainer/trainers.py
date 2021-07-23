@@ -48,8 +48,8 @@ class Trainer:
                  val_metrics=['accuracy'],
                  epochs=3,
                  lr=2e-5,
-                 batch_size=4,
-                 device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')):
+                 device=torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
+                 **optimizer_kwargs):
         self.model = model.to(device)
         self.module_to_train = getattr(model, submodule_to_train) if submodule_to_train else model
         if self.module_to_train is not None:
@@ -63,10 +63,9 @@ class Trainer:
         self.dataloader = dataloader
         self.validation_dataloader = validation_dataloader
         self.criterion = criterion
-        self.optimizer = optimizer(model.parameters(), lr=lr)
+        self.optimizer = optimizer(model.parameters(), lr=lr, **optimizer_kwargs)
         self.epochs = epochs
         self.metrics = val_metrics
-        self.batch_size = batch_size
         self.device = device
         self._current_epoch = 1
         self._metric_functions = {
@@ -105,6 +104,9 @@ class Trainer:
                 y_pred.extend(torch.argmax(logits, dim=-2).flatten().cpu().detach().tolist())
                 y_true.extend(torch.tensor(targets).flatten().tolist())
             running_loss += loss.item()
+        else:
+            print(questions[0], contexts[0])
+            print(y_true[0], y_pred[0])
         y_true, y_pred = torch.tensor(y_true).numpy(), torch.tensor(y_pred).numpy()
         metric_scores = {metric: self._metric_functions.get(metric, metric)(y_true, y_pred) for metric in self.metrics}
         print(f'VALIDATION Epoch: {self._current_epoch} Batch: {b + 1} '
